@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"log"
 	"os"
 
@@ -32,7 +33,7 @@ func init() {
 		&cli.StringFlag{
 			Name:        "path",
 			Aliases:     []string{"p"},
-			Usage:       "视频存储位置",
+			Usage:       "视频存储位置(默认为当前路径)",
 			Destination: &SavePath,
 			Required:    false,
 		},
@@ -40,5 +41,30 @@ func init() {
 
 	if err := app.Run(os.Args); err != nil {
 		log.Fatal(err)
+	}
+}
+
+// 判断参数是否存在，如果不存在要求用户输入
+func InitArguments() {
+	if BV == "" {
+		var bv string
+		print("请输入视频BV号: ")
+		fmt.Scan(&bv)
+		BV = bv
+	}
+
+	for {
+		if SavePath != "" {
+			if fileInfo, err := os.Stat(SavePath); err == nil && fileInfo.IsDir() {
+				break
+			} else {
+				println("路径不合法")
+			}
+		}
+
+		var path string
+		print("请输入视频存储路径: ")
+		fmt.Scan(&path)
+		SavePath = path
 	}
 }
