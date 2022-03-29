@@ -1,9 +1,12 @@
 package cmd
 
 import (
+	"bufio"
 	"fmt"
 	"log"
 	"os"
+	"regexp"
+	"strings"
 
 	"github.com/urfave/cli/v2"
 )
@@ -46,11 +49,23 @@ func init() {
 
 // 判断参数是否存在，如果不存在要求用户输入
 func InitArguments() {
-	if BV == "" {
-		var bv string
-		print("请输入视频BV号: ")
-		fmt.Scan(&bv)
-		BV = bv
+	for {
+		if BV != "" {
+			if match, err := regexp.MatchString("[B|b][V|v][0-9a-zA-Z]{10}", BV); err == nil && match {
+				break
+			} else {
+				fmt.Println("BV号不合法")
+			}
+
+		}
+
+		reader := bufio.NewReader(os.Stdin)
+		fmt.Print("请输入视频BV号: ")
+		bv, err := reader.ReadString('\r')
+		if err != nil {
+			log.Fatal(err)
+		}
+		BV = strings.Replace(bv, "\r", "", -1)
 	}
 
 	for {
@@ -58,13 +73,23 @@ func InitArguments() {
 			if fileInfo, err := os.Stat(SavePath); err == nil && fileInfo.IsDir() {
 				break
 			} else {
-				println("路径不合法")
+				fmt.Println("路径不合法")
 			}
 		}
 
-		var path string
-		print("请输入视频存储路径: ")
-		fmt.Scan(&path)
-		SavePath = path
+		reader := bufio.NewReader(os.Stdin)
+		fmt.Print("请输入视频存储路径(如果为空, 默认为当前路径): ")
+		path, err := reader.ReadString('\r')
+		if err != nil {
+			log.Fatal(err)
+		}
+		if path == "" || path == "\r" {
+			path, err = os.Getwd()
+			fmt.Println("path: ", path)
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
+		SavePath = strings.Replace(path, "\r", "", -1)
 	}
 }
