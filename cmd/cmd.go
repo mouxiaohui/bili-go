@@ -61,11 +61,11 @@ func InitArguments() {
 
 		reader := bufio.NewReader(os.Stdin)
 		fmt.Print("请输入视频BV号: ")
-		bv, err := reader.ReadString('\r')
+		bv, err := reader.ReadString('\n')
 		if err != nil {
 			log.Fatal(err)
 		}
-		BV = strings.Replace(bv, "\r", "", -1)
+		BV = strings.TrimSpace(bv)
 	}
 
 	for {
@@ -79,17 +79,17 @@ func InitArguments() {
 
 		reader := bufio.NewReader(os.Stdin)
 		fmt.Print("请输入视频存储路径(如果为空, 默认为当前路径): ")
-		path, err := reader.ReadString('\r')
+		path, err := reader.ReadString('\n')
 		if err != nil {
 			log.Fatal(err)
 		}
-		if path == "" || path == "\r" {
+		if path == "" || path == "\r\n" || path == "\n" {
 			path, err = os.Getwd()
 			fmt.Println("path: ", path)
 			if err != nil {
 				log.Fatal(err)
 			}
 		}
-		SavePath = strings.Replace(path, "\r", "", -1)
+		SavePath = strings.TrimSpace(path)
 	}
 }
