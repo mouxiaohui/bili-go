@@ -9,6 +9,6 @@ import (
 
 func main() {
 	if err := core.Run(); err != nil {
-		log.Fatal(err)
+		log.Fatal(err.Error())
 	}
 }

@@ -22,6 +22,7 @@ func init() {
 		Name:    "bili-go",
 		Usage:   "命令行中下载 bilibili 视频",
 		Action: func(c *cli.Context) error {
+			fmt.Println("📺 BiliBili 视频下载!")
 			return nil
 		},
 	}
@@ -51,10 +52,10 @@ func init() {
 func InitArguments() {
 	for {
 		if BV != "" {
-			if match, err := regexp.MatchString("[B|b][V|v][0-9a-zA-Z]{10}", BV); err == nil && match {
+			if match, err := regexp.MatchString("[B|b][V|v][0-9a-zA-Z]{10}\\b", BV); err == nil && match {
 				break
 			} else {
-				fmt.Println("BV号不合法")
+				fmt.Println("BV号不合法❗")
 			}
 
 		}
@@ -63,7 +64,7 @@ func InitArguments() {
 		fmt.Print("请输入视频BV号: ")
 		bv, err := reader.ReadString('\n')
 		if err != nil {
-			log.Fatal(err)
+			log.Fatal(err.Error())
 		}
 		BV = strings.TrimSpace(bv)
 	}
@@ -73,7 +74,7 @@ func InitArguments() {
 			if fileInfo, err := os.Stat(SavePath); err == nil && fileInfo.IsDir() {
 				break
 			} else {
-				fmt.Println("路径不合法")
+				fmt.Println("路径不合法❗")
 			}
 		}
 
@@ -81,13 +82,12 @@ func InitArguments() {
 		fmt.Print("请输入视频存储路径(如果为空, 默认为当前路径): ")
 		path, err := reader.ReadString('\n')
 		if err != nil {
-			log.Fatal(err)
+			log.Fatal(err.Error())
 		}
 		if path == "" || path == "\r\n" || path == "\n" {
 			path, err = os.Getwd()
-			fmt.Println("path: ", path)
 			if err != nil {
-				log.Fatal(err)
+				log.Fatal(err.Error())
 			}
 		}
 		SavePath = strings.TrimSpace(path)
