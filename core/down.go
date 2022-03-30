@@ -26,7 +26,7 @@ func Run() error {
 		return err
 	}
 	if videoInfo.Aid == 0 {
-		return errors.New("未找到视频❗")
+		return errors.New("未找到视频!")
 	}
 
 	err = downloadVideo(&videoInfo)

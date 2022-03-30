@@ -16,13 +16,41 @@ var (
 	SavePath string
 )
 
+// 前景  背景  颜色
+// 30	 40	  黑色
+// 31	 41	  红色
+// 32	 42	  绿色
+// 33	 43	  黄色
+// 34	 44	  蓝色
+// 35	 45	  紫色
+// 36	 46	  深绿
+// 37	 47	  白色
+
+// 打印带有前景色的文本
+func ColorsPrintF(message string, fg uint8, isNewLine bool) {
+	end := ""
+	if isNewLine {
+		end = "\n"
+	}
+	fmt.Printf("\x1b[%dm%s\x1b[0m%s", fg, message, end)
+}
+
+// 打印带有背景色和前景色的文本
+func ColorsPrintBF(message string, bg, fg uint8, isNewLine bool) {
+	end := ""
+	if isNewLine {
+		end = "\n"
+	}
+	fmt.Printf("\x1b[%d;%dm%s\x1b[0m%s", bg, fg, message, end)
+}
+
 func init() {
 	app := &cli.App{
 		Version: "1.0",
 		Name:    "bili-go",
 		Usage:   "命令行中下载 bilibili 视频",
 		Action: func(c *cli.Context) error {
-			fmt.Println("📺 BiliBili 视频下载!")
+			ColorsPrintBF("📺 BiliBili 视频下载! ", 44, 33, true)
 			return nil
 		},
 	}
@@ -55,13 +83,14 @@ func InitArguments() {
 			if match, err := regexp.MatchString("[B|b][V|v][0-9a-zA-Z]{10}\\b", BV); err == nil && match {
 				break
 			} else {
-				fmt.Println("BV号不合法❗")
+				ColorsPrintF("BV号错误!", 31, true)
 			}
 
 		}
 
 		reader := bufio.NewReader(os.Stdin)
-		fmt.Print("请输入视频BV号: ")
+		ColorsPrintF("? ", 32, false)
+		ColorsPrintF("请输入视频BV号: ", 37, false)
 		bv, err := reader.ReadString('\n')
 		if err != nil {
 			log.Fatal(err.Error())
@@ -74,12 +103,13 @@ func InitArguments() {
 			if fileInfo, err := os.Stat(SavePath); err == nil && fileInfo.IsDir() {
 				break
 			} else {
-				fmt.Println("路径不合法❗")
+				ColorsPrintF("路径错误!", 31, true)
 			}
 		}
 
 		reader := bufio.NewReader(os.Stdin)
-		fmt.Print("请输入视频存储路径(如果为空, 默认为当前路径): ")
+		ColorsPrintF("? ", 32, false)
+		ColorsPrintF("请输入视频存储路径(如果为空, 默认为当前路径): ", 37, false)
 		path, err := reader.ReadString('\n')
 		if err != nil {
 			log.Fatal(err.Error())
