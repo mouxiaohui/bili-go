@@ -1,5 +1,32 @@
 package core
 
+import (
+	"fmt"
+)
+
+var (
+	// 一般80以上的都要大会员，无法获取
+	VIDEO_QUALITY map[int]string = map[int]string{
+		6:   "240P 极速",
+		16:  "360P 流畅",
+		32:  "480P 清晰",
+		64:  "720P 高清",
+		74:  "720P 60帧",
+		80:  "1080P 高清",
+		112: "1080P 高码率",
+		116: "1080P 60帧",
+		120: "4k 超清",
+		125: "HDR 真彩",
+		127: "超高清 8K",
+	}
+
+	AUDIO_QUALITY map[int]string = map[int]string{
+		30216: "64  kbps",
+		30232: "128 kbps",
+		30280: "320 kbps",
+	}
+)
+
 type ResultInfo[D VideoUrl | VideoInfo] struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`
@@ -32,36 +59,44 @@ type Video struct {
 }
 
 type Audio struct {
-	Id        int    `json:"id"`
-	BaseUrl   string `json:"baseUrl"`
-	BandWidth int    `json:"bandwidth"`
+	Id      int    `json:"id"`
+	BaseUrl string `json:"baseUrl"`
+}
+
+// 获取所有视频质量文字描述
+func (d *Dash) GetVideoQualitys() []string {
+	var qualitys []string
+	for _, v := range d.Videos {
+		qualitys = append(qualitys, v.getQuality())
+	}
+
+	return qualitys
+}
+
+// 获取所有音频质量的文字描述
+func (d *Dash) GetAudioQualitys() []string {
+	var qualitys []string
+	for _, a := range d.Audios {
+		qualitys = append(qualitys, a.getQuality())
+	}
+
+	return qualitys
 }
 
 // 获取视频质量的文字描述
-func GetQualityById(id int) string {
-	// 一般80以上的都要大会员，无法获取
-	switch id {
-	case 6:
-		return "240P 极速"
-	case 16:
-		return "360P 流畅"
-	case 32:
-		return "480P 清晰"
-	case 64:
-		return "720P 高清"
-	case 74:
-		return "720P60 高帧率"
-	case 80:
-		return "1080P 高清"
-	case 112:
-		return "1080P+ 高码率"
-	case 116:
-		return "1080P60 高帧率"
-	case 120:
-		return "4k 超清"
-	case 125:
-		return "HDR 真彩色"
-	default:
-		return "UNKNOW"
+func (v *Video) getQuality() string {
+	if qua := VIDEO_QUALITY[v.Id]; qua == "" {
+		return "UNKOWN"
+	} else {
+		return fmt.Sprintf("%s | %dx%d | BandWidth: %d", qua, v.Width, v.Height, v.BandWidth)
+	}
+}
+
+// 获取音频质量的文字描述
+func (a *Audio) getQuality() string {
+	if qua := AUDIO_QUALITY[a.Id]; qua == "" {
+		return "UNKOWN"
+	} else {
+		return qua
 	}
 }

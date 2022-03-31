@@ -6,11 +6,13 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/mouxiaohui/bili-go/cmd"
+
+	"github.com/AlecAivazis/survey/v2"
 )
 
 var (
@@ -40,7 +42,7 @@ func Run() error {
 // 获取视频信息
 func getVideoInfo(bvid string) (VideoInfo, error) {
 	var resultInfo ResultInfo[VideoInfo]
-	url := fmt.Sprintf("%s%s?bvid=%s", BASE_URL, "x/web-interface/view", bvid)
+	url := fmt.Sprintf("%sx/web-interface/view?bvid=%s", BASE_URL, bvid)
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -97,18 +99,66 @@ func getVideoUrl(url string) (VideoUrl, error) {
 func downloadVideo(videoInfo *VideoInfo) error {
 	videoUrl, err := getVideoUrl(
 		fmt.Sprintf(
-			"%s%s?fnval=80&avid=%s&cid=%s",
+			"%sx/player/playurl?fnval=80&avid=%d&cid=%d",
 			BASE_URL,
-			"x/player/playurl",
-			strconv.Itoa(videoInfo.Aid),
-			strconv.Itoa(videoInfo.Cid),
+			videoInfo.Aid,
+			videoInfo.Cid,
 		),
 	)
 	if err != nil {
 		return err
 	}
 
+	videoIndex, audioIndex, ok := selectQuality(
+		videoUrl.Dash.GetVideoQualitys(),
+		videoUrl.Dash.GetAudioQualitys(),
+	)
+
 	return nil
+}
+
+// 选择视频，音频质量
+func selectQuality(videoQualitys, audioQualitys []string) (videoIndex, audioIndex int, ok bool) {
+	var qs = []*survey.Question{
+		{
+			Name: "VideoQuality",
+			Prompt: &survey.Select{
+				Message:  "选择视频画质: ",
+				Options:  videoQualitys,
+				VimMode:  true,
+				PageSize: 10,
+			},
+		},
+		{
+			Name: "AudioQuality",
+			Prompt: &survey.Select{
+				Message:  "选择音频质量: ",
+				Options:  audioQualitys,
+				VimMode:  true,
+				PageSize: 10,
+			},
+		},
+	}
+
+	answers := struct {
+		VideoQuality string
+		AudioQuality string
+	}{}
+
+	err := survey.Ask(qs, &answers)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+
+	vIndex, ok1 := getArrayIndex(&videoQualitys, answers.VideoQuality)
+	aIndex, ok2 := getArrayIndex(&audioQualitys, answers.AudioQuality)
+	if ok1 && ok2 {
+		ok = true
+		videoIndex = vIndex
+		audioIndex = aIndex
+	}
+
+	return
 }
 
 func readCloserToString(rc *io.ReadCloser) (string, error) {
@@ -117,4 +167,17 @@ func readCloserToString(rc *io.ReadCloser) (string, error) {
 		return "", err
 	}
 	return string(body), nil
+}
+
+// 根据value获取数组下标
+func getArrayIndex[T string](arr *[]T, match T) (index int, ok bool) {
+	for i, v := range *arr {
+		if v == match {
+			index = i
+			ok = true
+			return
+		}
+	}
+
+	return
 }
