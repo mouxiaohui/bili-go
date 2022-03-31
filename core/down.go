@@ -8,6 +8,8 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/mouxiaohui/bili-go/cmd"
@@ -31,7 +33,7 @@ func Run() error {
 		return errors.New("未找到视频!")
 	}
 
-	err = downloadVideo(&videoInfo)
+	err = download(&videoInfo)
 	if err != nil {
 		return err
 	}
@@ -96,7 +98,7 @@ func getVideoUrl(url string) (VideoUrl, error) {
 }
 
 // 下载视频
-func downloadVideo(videoInfo *VideoInfo) error {
+func download(videoInfo *VideoInfo) error {
 	videoUrl, err := getVideoUrl(
 		fmt.Sprintf(
 			"%sx/player/playurl?fnval=80&avid=%d&cid=%d",
@@ -109,16 +111,56 @@ func downloadVideo(videoInfo *VideoInfo) error {
 		return err
 	}
 
-	videoIndex, audioIndex, ok := selectQuality(
+	videoIndex, audioIndex, fileFormat, ok := selectQuality(
 		videoUrl.Dash.GetVideoQualitys(),
 		videoUrl.Dash.GetAudioQualitys(),
 	)
 
+	if !ok {
+		return errors.New("未查询到选择项!")
+	}
+
+	if err = requestVideoUrl(&videoUrl.Dash.Videos[videoIndex].BaseUrl, videoInfo, fileFormat); err != nil {
+		return err
+	}
+	requestAudioUrl(&videoUrl.Dash.Audios[audioIndex].BaseUrl, videoInfo)
+
 	return nil
 }
 
-// 选择视频，音频质量
-func selectQuality(videoQualitys, audioQualitys []string) (videoIndex, audioIndex int, ok bool) {
+func requestVideoUrl(url *string, videoInfo *VideoInfo, fileFormat string) error {
+	req, err := http.NewRequest("GET", *url, nil)
+	if err != nil {
+		return err
+	}
+	generateHeaders(req, &videoInfo.Bvid)
+
+	resp, err := CLIENT.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	filename := fmt.Sprintf("%s.%s", videoInfo.Title, fileFormat)
+	file, err := os.Create(filepath.Join(cmd.SavePath, filename))
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	if _, err := io.Copy(file, resp.Body); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func requestAudioUrl(url *string, videoInfo *VideoInfo) {
+
+}
+
+// 选择视频，音频质量，视频保存格式
+func selectQuality(videoQualitys, audioQualitys []string) (videoIndex, audioIndex int, fileFormat string, ok bool) {
 	var qs = []*survey.Question{
 		{
 			Name: "VideoQuality",
@@ -132,10 +174,17 @@ func selectQuality(videoQualitys, audioQualitys []string) (videoIndex, audioInde
 		{
 			Name: "AudioQuality",
 			Prompt: &survey.Select{
-				Message:  "选择音频质量: ",
-				Options:  audioQualitys,
-				VimMode:  true,
-				PageSize: 10,
+				Message: "选择音频质量: ",
+				Options: audioQualitys,
+				VimMode: true,
+			},
+		},
+		{
+			Name: "FileFormat",
+			Prompt: &survey.Select{
+				Message: "选择视频保存格式: ",
+				Options: []string{"mp4", "flv", "avi", "f4v", "wmv"},
+				VimMode: true,
 			},
 		},
 	}
@@ -143,6 +192,7 @@ func selectQuality(videoQualitys, audioQualitys []string) (videoIndex, audioInde
 	answers := struct {
 		VideoQuality string
 		AudioQuality string
+		FileFormat   string
 	}{}
 
 	err := survey.Ask(qs, &answers)
@@ -156,6 +206,7 @@ func selectQuality(videoQualitys, audioQualitys []string) (videoIndex, audioInde
 		ok = true
 		videoIndex = vIndex
 		audioIndex = aIndex
+		fileFormat = answers.FileFormat
 	}
 
 	return
@@ -167,6 +218,13 @@ func readCloserToString(rc *io.ReadCloser) (string, error) {
 		return "", err
 	}
 	return string(body), nil
+}
+
+func generateHeaders(req *http.Request, bvid *string) {
+	req.Header.Add("user-agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.13; rv:56.0) Gecko/20100101 Firefox/56.0")
+	req.Header.Add("origin", "https://www.bilibili.com")
+	req.Header.Add("range", "bytes=0-")
+	req.Header.Add("referer", fmt.Sprintf("https://www.bilibili.com/video/%s", *bvid))
 }
 
 // 根据value获取数组下标
