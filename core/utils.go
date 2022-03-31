@@ -3,6 +3,7 @@ package core
 import (
 	"fmt"
 	"net/http"
+	"os"
 	"time"
 )
 
@@ -29,5 +30,16 @@ func generateHeaders(req *http.Request) {
 
 // 获取当前时间并格式化
 func getTimeFormat() string {
-	return time.Now().Format("2022-03-31 15:04:05")
+	return time.Now().Format("2022_03_31_15_04_05")
+}
+
+// 删除文件
+func removeFiles(fileList []*string) error {
+	for _, file := range fileList {
+		if err := os.Remove(*file); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

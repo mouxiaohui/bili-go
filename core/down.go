@@ -24,6 +24,10 @@ var (
 )
 
 func Run() error {
+	if err := ffmpegVersion(); err != nil {
+		return err
+	}
+
 	cmd.InitArguments()
 
 	videoInfo, err := getVideoInfo(cmd.BV)
@@ -117,30 +121,65 @@ func download(videoInfo *VideoInfo) error {
 		videoUrl.Dash.GetVideoQualitys(),
 		videoUrl.Dash.GetAudioQualitys(),
 	)
-
 	if !ok {
 		return errors.New("未查询到选择项!")
 	}
 
-	videoFileName := fmt.Sprintf("%d.video", time.Now().Unix())
-	err = requestFileTo(&videoUrl.Dash.Videos[videoIndex].BaseUrl, videoFileName)
+	// 下载视频和音频
+	videoFilePath := filepath.Join(
+		cmd.SavePath,
+		fmt.Sprintf("%d.video", time.Now().Unix()),
+	)
+	err = requestFileTo(&videoUrl.Dash.Videos[videoIndex].BaseUrl, videoFilePath)
+	if err != nil {
+		return err
+	}
+	audioFilePath := filepath.Join(
+		cmd.SavePath,
+		fmt.Sprintf("%d.audio", time.Now().Unix()),
+	)
+	err = requestFileTo(&videoUrl.Dash.Audios[audioIndex].BaseUrl, audioFilePath)
 	if err != nil {
 		return err
 	}
 
-	audioFileName := fmt.Sprintf("%d.audio", time.Now().Unix())
-	err = requestFileTo(&videoUrl.Dash.Audios[audioIndex].BaseUrl, audioFileName)
+	outFile := filepath.Join(
+		cmd.SavePath,
+		fmt.Sprintf("%s_%s.%s", videoInfo.Title, getTimeFormat(), fileFormat),
+	)
+	// 合并视频/音频
+	mergeFiles := []*string{&videoFilePath, &audioFilePath}
+	err = ffmpegMergeFile(
+		mergeFiles,
+		outFile,
+	)
 	if err != nil {
-		return err
+		// 如果合并失败，尝试合并成 MP4
+		if fileFormat != "mp4" {
+			outFile = filepath.Join(
+				cmd.SavePath,
+				fmt.Sprintf("%s_%s.%s", videoInfo.Title, getTimeFormat(), "mp4"),
+			)
+			err = ffmpegMergeFile(
+				mergeFiles,
+				outFile,
+			)
+			if err != nil {
+				return err
+			}
+		}
 	}
 
-	fmt.Println("fileFormat: ", fileFormat)
+	// 删除合并前的文件
+	if err := removeFiles(mergeFiles); err != nil {
+		return err
+	}
 
 	return nil
 }
 
 // 请求数据, 并保存为指定文件格式
-func requestFileTo(url *string, fileName string) error {
+func requestFileTo(url *string, filePath string) error {
 	req, err := http.NewRequest("GET", *url, nil)
 	if err != nil {
 		return err
@@ -153,7 +192,7 @@ func requestFileTo(url *string, fileName string) error {
 	}
 	defer resp.Body.Close()
 
-	file, err := os.Create(filepath.Join(cmd.SavePath, fileName))
+	file, err := os.Create(filePath)
 	if err != nil {
 		return err
 	}
@@ -190,7 +229,7 @@ func selectQuality(videoQualitys, audioQualitys []string) (videoIndex, audioInde
 			Name: "FileFormat",
 			Prompt: &survey.Select{
 				Message: "选择视频保存格式: ",
-				Options: []string{"mp4", "flv", "avi", "f4v", "wmv"},
+				Options: []string{"mp4", "avi", "wmv", "mov"},
 				VimMode: true,
 			},
 		},
