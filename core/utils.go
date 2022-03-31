@@ -34,9 +34,9 @@ func getTimeFormat() string {
 }
 
 // 删除文件
-func removeFiles(fileList []*string) error {
-	for _, file := range fileList {
-		if err := os.Remove(*file); err != nil {
+func removeFiles(fileList *[]string) error {
+	for _, file := range *fileList {
+		if err := os.Remove(file); err != nil {
 			return err
 		}
 	}

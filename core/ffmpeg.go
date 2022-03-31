@@ -22,13 +22,13 @@ func ffmpegVersion() error {
 }
 
 // 使用ffmpeg合并文件
-func ffmpegMergeFile(fileList []*string, outFile string) error {
+func ffmpegMergeFile(fileList *[]string, outFile *string) error {
 	arg := []string{}
-	for _, fp := range fileList {
-		arg = append(arg, "-i", *fp)
+	for _, fp := range *fileList {
+		arg = append(arg, "-i", fp)
 	}
 
-	arg = append(arg, "-vcodec", "copy", "-acodec", "copy", outFile)
+	arg = append(arg, "-vcodec", "copy", "-acodec", "copy", *outFile)
 	cmd := exec.Command("ffmpeg", arg...)
 	var out bytes.Buffer
 	cmd.Stdout = &out

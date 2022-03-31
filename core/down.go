@@ -44,7 +44,9 @@ func Run() error {
 		return err
 	}
 
-	return err
+	cmd.ColorsPrintF("下载完成!", 32, false)
+
+	return nil
 }
 
 // 获取视频信息
@@ -125,20 +127,28 @@ func download(videoInfo *VideoInfo) error {
 		return errors.New("未查询到选择项!")
 	}
 
-	// 下载视频和音频
-	videoFilePath := filepath.Join(
-		cmd.SavePath,
-		fmt.Sprintf("%d.video", time.Now().Unix()),
-	)
-	err = requestFileTo(&videoUrl.Dash.Videos[videoIndex].BaseUrl, videoFilePath)
-	if err != nil {
-		return err
-	}
 	audioFilePath := filepath.Join(
 		cmd.SavePath,
 		fmt.Sprintf("%d.audio", time.Now().Unix()),
 	)
-	err = requestFileTo(&videoUrl.Dash.Audios[audioIndex].BaseUrl, audioFilePath)
+	videoFilePath := filepath.Join(
+		cmd.SavePath,
+		fmt.Sprintf("%d.video", time.Now().Unix()),
+	)
+
+	// 开启协程下载音频
+	c := make(chan error)
+	go func() {
+		err = requestFileTo(&videoUrl.Dash.Audios[audioIndex].BaseUrl, audioFilePath)
+		if err != nil {
+			c <- err
+		}
+
+		c <- nil
+	}()
+
+	// 下载视频
+	err = requestFileTo(&videoUrl.Dash.Videos[videoIndex].BaseUrl, videoFilePath)
 	if err != nil {
 		return err
 	}
@@ -147,32 +157,49 @@ func download(videoInfo *VideoInfo) error {
 		cmd.SavePath,
 		fmt.Sprintf("%s_%s.%s", videoInfo.Title, getTimeFormat(), fileFormat),
 	)
+
+	// 等待协程
+	err = <-c
+	if err != nil {
+		return err
+	}
+
 	// 合并视频/音频
-	mergeFiles := []*string{&videoFilePath, &audioFilePath}
-	err = ffmpegMergeFile(
+	mergeFiles := []string{videoFilePath, audioFilePath}
+	err = mergeAV(&outFile, &mergeFiles, &fileFormat)
+	if err != nil {
+		return err
+	}
+
+	// 删除合并前的文件
+	if err := removeFiles(&mergeFiles); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// 合并视频和音频
+func mergeAV(outFile *string, mergeFiles *[]string, fileFormat *string) error {
+	err := ffmpegMergeFile(
 		mergeFiles,
 		outFile,
 	)
 	if err != nil {
 		// 如果合并失败，尝试合并成 MP4
-		if fileFormat != "mp4" {
-			outFile = filepath.Join(
+		if *fileFormat != "mp4" {
+			out := filepath.Join(
 				cmd.SavePath,
-				fmt.Sprintf("%s_%s.%s", videoInfo.Title, getTimeFormat(), "mp4"),
+				fmt.Sprintf("%s.%s", *outFile, "mp4"),
 			)
 			err = ffmpegMergeFile(
 				mergeFiles,
-				outFile,
+				&out,
 			)
 			if err != nil {
 				return err
 			}
 		}
-	}
-
-	// 删除合并前的文件
-	if err := removeFiles(mergeFiles); err != nil {
-		return err
 	}
 
 	return nil
