@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"time"
 )
 
 // 根据value获取数组下标
@@ -26,11 +25,6 @@ func generateHeaders(req *http.Request) {
 	req.Header.Add("origin", "https://www.bilibili.com")
 	req.Header.Add("range", "bytes=0-")
 	req.Header.Add("referer", fmt.Sprintf("https://www.bilibili.com/video/%s", BVID))
-}
-
-// 获取当前时间并格式化
-func getTimeFormat() string {
-	return time.Now().Format("2022_03_31_15_04_05")
 }
 
 // 删除文件

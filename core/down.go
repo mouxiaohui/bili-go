@@ -166,7 +166,7 @@ func download(videoInfo *VideoInfo) (outFile string, err error) {
 
 	outFile = filepath.Join(
 		cmd.SavePath,
-		fmt.Sprintf("%s_%s.%s", videoInfo.Title, getTimeFormat(), fileFormat),
+		fmt.Sprintf("%s_%d.%s", videoInfo.Title, time.Now().Unix(), fileFormat),
 	)
 
 	// 等待协程

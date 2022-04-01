@@ -87,7 +87,7 @@ func InitArguments() {
 			if match, err := regexp.MatchString("[B|b][V|v][0-9a-zA-Z]{10}\\b", BV); err == nil && match {
 				break
 			} else {
-				ColorsPrintF("BV号错误!", 31, true, true)
+				ColorsPrintF("BV号错误!", 31, false, true)
 			}
 
 		}
