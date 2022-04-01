@@ -47,7 +47,7 @@ func Run() error {
 		return err
 	}
 
-	cmd.ColorsPrintF("下载完成!   ", 32, false)
+	cmd.ColorsPrintF("下载完成!   ", 32, true, false)
 	fmt.Print(outFile)
 
 	return nil
@@ -141,6 +141,9 @@ func download(videoInfo *VideoInfo) (outFile string, err error) {
 		fmt.Sprintf("%d.video", time.Now().Unix()),
 	)
 
+	cmd.ColorsPrintF("正在下载: ", 37, true, false)
+	cmd.ColorsPrintF(videoInfo.Title, 37, false, true)
+
 	// 初始化进度条
 	progress := mpb.New()
 
@@ -199,7 +202,7 @@ func mergeAV(outFile *string, mergeFiles *[]string, fileFormat *string) error {
 		// 如果合并失败，尝试合并成 MP4
 		if *fileFormat != "mp4" {
 			cmd.ColorsPrintF(
-				fmt.Sprintf("%s格式合并失败, 尝试MP4", *fileFormat), 33, true,
+				fmt.Sprintf("%s格式合并失败, 尝试MP4", *fileFormat), 33, false, true,
 			)
 			out := filepath.Join(
 				cmd.SavePath,
