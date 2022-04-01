@@ -11,6 +11,7 @@
 ## 🟡 说明
 
 <h3>不支持 多P,番剧,电视剧,电影 等视频的下载</h3>
+<h3>视频与音频合并基于<a href="https://www.ffmpeg.org/download.html">FFmpeg</a>, 因此得先安装<a href="https://www.ffmpeg.org/download.html">FFmpeg</a></h3>
 <br />
 
 ## 🟢 安装
