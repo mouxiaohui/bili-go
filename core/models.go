@@ -86,7 +86,7 @@ func (d *Dash) GetAudioQualitys() []string {
 // 获取视频质量的文字描述
 func (v *Video) getQuality() string {
 	if qua := VIDEO_QUALITY[v.Id]; qua == "" {
-		return "UNKOWN"
+		return "unknown"
 	} else {
 		return fmt.Sprintf("%s | %dx%d | BandWidth: %d", qua, v.Width, v.Height, v.BandWidth)
 	}
@@ -95,7 +95,7 @@ func (v *Video) getQuality() string {
 // 获取音频质量的文字描述
 func (a *Audio) getQuality() string {
 	if qua := AUDIO_QUALITY[a.Id]; qua == "" {
-		return "UNKOWN"
+		return "unknown"
 	} else {
 		return qua
 	}
